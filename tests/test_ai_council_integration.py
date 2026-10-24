@@ -29,8 +29,8 @@ class AIIntegration(unittest.TestCase):
     def test_both_host_skill_trees_identical(self):
         a = ROOT / ".agents/skills"
         b = ROOT / ".claude/skills"
-        paths_a = sorted(x.relative_to(a) for x in a.rglob("*") if x.is_file())
-        paths_b = sorted(x.relative_to(b) for x in b.rglob("*") if x.is_file())
+        paths_a = sorted(x.relative_to(a) for x in a.rglob("*") if x.is_file() and "__pycache__" not in x.parts and x.suffix != ".pyc")
+        paths_b = sorted(x.relative_to(b) for x in b.rglob("*") if x.is_file() and "__pycache__" not in x.parts and x.suffix != ".pyc")
         self.assertEqual(paths_a, paths_b)
         for path in paths_a:
             self.assertEqual((a/path).read_bytes(), (b/path).read_bytes(), str(path))
