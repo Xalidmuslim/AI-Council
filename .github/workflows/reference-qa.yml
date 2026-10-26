@@ -1,0 +1,102 @@
+name: Reference QA - manual PNG comparison
+
+on:
+  workflow_dispatch:
+    inputs:
+      reference:
+        description: 'Approved reference PNG path in repository'
+        required: true
+        default: 'visual-qa/reference/home.png'
+        type: string
+      actual:
+        description: 'PNG screenshot of the same screen'
+        required: true
+        default: 'visual-qa/actual/home.png'
+        type: string
+      tolerance:
+        description: 'Max channel difference ignored (0-255)'
+        required: true
+        default: '2'
+        type: string
+      max_changed_percent:
+        description: 'Permitted changed pixel percentage (0-100)'
+        required: true
+        default: '0.5'
+        type: string
+      mask:
+        description: 'Optional path to JSON mask file'
+        required: false
+        default: ''
+        type: string
+  workflow_call:
+    inputs:
+      reference:
+        type: string
+        required: true
+      actual:
+        type: string
+        required: true
+      tolerance:
+        type: string
+        default: '2'
+      max_changed_percent:
+        type: string
+        default: '0.5'
+      mask:
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout invoking repository's images
+        uses: actions/checkout@v4
+      - name: Checkout approved AI-Council comparison tool
+        uses: actions/checkout@v4
+        with:
+          repository: Xalidmuslim/AI-Council
+          ref: main
+          path: _reference_qa_tool
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: _reference_qa_tool/requirements-visual-qa.txt
+      - name: Install only visual QA dependencies
+        run: python -m pip install -r _reference_qa_tool/requirements-visual-qa.txt
+      - name: Compare approved reference and actual screenshot
+        env:
+          REFERENCE: ${{ inputs.reference }}
+          ACTUAL: ${{ inputs.actual }}
+          TOLERANCE: ${{ inputs.tolerance }}
+          MAX_CHANGED: ${{ inputs.max_changed_percent }}
+          MASK_FILE: ${{ inputs.mask }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          args=("$REFERENCE" "$ACTUAL" --out-dir visual-qa-report
+                --tolerance "$TOLERANCE" --max-changed-percent "$MAX_CHANGED")
+          if [[ -n "$MASK_FILE" ]]; then args+=(--mask "$MASK_FILE"); fi
+          python _reference_qa_tool/tools/reference_qa.py "${args[@]}"
+      - name: Publish review summary
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f visual-qa-report/summary.md ]]; then
+            cat visual-qa-report/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Visual comparison was not completed; check the job logs.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload visual QA results, even when pixels differ
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Reference-QA-report
+          path: visual-qa-report/
+          retention-days: 14
+          if-no-files-found: warn
