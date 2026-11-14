@@ -1,0 +1,38 @@
+name: AI cloud agent (review only)
+on:
+  schedule:
+    - cron: '23 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: cloud-agent-daily
+  cancel-in-progress: false
+
+jobs:
+  agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Process one issue (off until explicitly enabled)
+        env:
+          AI_AUTOMATION_ENABLED: ${{ vars.AI_AUTOMATION_ENABLED }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 tools/cloud_agent.py
+      - name: Upload report for human approval
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloud-agent-review
+          path: agent_reports/cloud-agent.md
+          if-no-files-found: warn
+          retention-days: 14
