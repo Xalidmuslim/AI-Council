@@ -12,3 +12,13 @@ Select relevant installed skills based on the **user's natural-language task**, 
 **Critical for native Android or Flutter:** read [ANDROID_PLAYBOOK.md](ANDROID_PLAYBOOK.md) and the target project's own instruction files first. Inspect the real source and branch, preserve Kotlin/Compose or Flutter, content and prior optimizations. Avoid web-stack defaults from imported skills. Do not imply that running tests, building an APK or measuring 120 FPS happened unless it actually happened. Do not change production infrastructure or publish externally without authorization.
 
 These rules are active only in agent environments that load this repository's instructions and skill directories. GitHub storage by itself does not activate skills in ChatGPT or unrelated repositories. Never load all 11 for a simple task.
+
+## Three-role coordination (opt-in)
+
+For requests that explicitly use the programmer, arabist or tester roles, read
+[docs/AGENT_PROTOCOL.md](docs/AGENT_PROTOCOL.md) and the corresponding
+[.github/agents/](.github/agents/) profile **before** acting. Roles are task
+instructions, not proof of a separately running agent. Prefer explicit input
+(repository/ref/commit, scope, evidence) and safe draft PR handoffs.
+Read target-repository AGENTS.md first; never assume these instructions are loaded
+automatically by ChatGPT Work or unrelated repositories.
