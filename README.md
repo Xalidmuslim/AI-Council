@@ -25,3 +25,15 @@ python3 -m unittest discover -s tests -v
 Набор адаптирован из [Jakeschincariol/replica-skill](https://github.com/Jakeschincariol/replica-skill), коммит `77c9436fb3d18c3d58169efb8caf4fe906b0dc51`, лицензия MIT. См. `THIRD_PARTY_NOTICES.md` и `LICENSE-REPLICA-SKILL`.
 
 Для других приложений на GitHub навыки надо импортировать в каждый репозиторий или установить глобально в локальной среде агента: файлы AI-Council не включают себя во всех других проектах.
+
+## Три роли: программист, арабист, тестировщик
+
+Подготовлены профили в [.github/agents](.github/agents), единый
+[протокол передачи задач](docs/AGENT_PROTOCOL.md) и
+[инструкция запуска в ChatGPT Work](docs/CHATGPT_WORK_START.md).
+
+Это конфигурация, **не** три уже работающих автономных процесса.
+Поддерживаемые GitHub Copilot custom agents могут использовать профили
+`.agent.md`; для ChatGPT Work надо явно открыть инструкции и
+уполномоченные репозитории. Для разработки/запуска команд применяйте Codex.
+Изменения делаются в отдельных ветках и проходят review, без auto-merge.
