@@ -26,6 +26,7 @@ jobs:
           AI_AUTOMATION_ENABLED: ${{ vars.AI_AUTOMATION_ENABLED }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
+          OPENAI_REVIEW_MODEL: ${{ vars.OPENAI_REVIEW_MODEL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 tools/cloud_agent.py
       - name: Upload report for human approval
