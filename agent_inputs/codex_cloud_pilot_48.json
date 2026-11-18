@@ -1,0 +1,19 @@
+{
+  "repository": "Xalidmuslim/Arabic-Academy-Flutter",
+  "issue_url": "https://github.com/Xalidmuslim/Arabic-Academy-Flutter/issues/48",
+  "base_commit": "d6728363bf7969bf76a95457e2c5c12b29fbe057",
+  "objective": "Extend Flutter regression test coverage for the existing demo role switch without modifying the teaching content or production logic. Test behavior, not just widget existence.",
+  "allowed_paths": [
+    "test/widget_test.dart",
+    "test/content_test.dart"
+  ],
+  "acceptance": [
+    "flutter analyze --no-fatal-infos",
+    "flutter test"
+  ],
+  "constraints": [
+    "Do not modify lib/, assets/, translations, harakat, Gradle, Flutter dependencies or user data.",
+    "Do not modify main, merge pull requests, upload private source, or claim an APK was built.",
+    "Attach real RED/GREEN evidence and CI URLs, or explicitly mark tests as NOT_RUN."
+  ]
+}
