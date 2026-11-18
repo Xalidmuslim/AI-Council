@@ -1,6 +1,12 @@
 name: AI-Council Codex no-API handoff (manual)
 
 on:
+  pull_request:
+    paths:
+      - 'tools/codex_handoff.py'
+      - 'tests/test_codex_handoff.py'
+      - 'agent_inputs/codex_cloud_pilot_48.json'
+      - '.github/workflows/codex-no-api-handoff.yml'
   workflow_dispatch:
 
 permissions:
