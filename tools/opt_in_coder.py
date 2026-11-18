@@ -5,6 +5,7 @@ This program NEVER writes to target repositories, executes generated code,
 creates PRs, approves merges, or reads private source. Default: disabled.
 """
 import base64
+import binascii
 import difflib
 import hashlib
 import json
@@ -80,11 +81,13 @@ def inspect_source(task, data):
     if not isinstance(raw, str):
         raise ValueError("Source bytes unavailable")
     try:
-        decoded = base64.b64decode(raw, validate=False)
+        # GitHub may wrap valid Base64 in newlines; reject any other bytes.
+        compact = "".join(raw.split())
+        decoded = base64.b64decode(compact, validate=True)
         if len(decoded) != source["size"] or len(decoded) > MAX_SOURCE_BYTES:
             raise ValueError("Source byte length mismatch")
         text = decoded.decode("utf-8", errors="strict")
-    except (ValueError, UnicodeDecodeError) as exc:
+    except (ValueError, UnicodeDecodeError, binascii.Error) as exc:
         raise ValueError("Invalid source encoding") from exc
     if not text or "\x00" in text:
         raise ValueError("Empty or unsafe source text")
