@@ -5,6 +5,7 @@ No source execution, AI models, write API, approvals or automatic merges.
 """
 import argparse
 import json
+import os
 import re
 import sys
 import urllib.error
@@ -203,6 +204,9 @@ def write_report(report, prefix):
 def github_get(url):
     headers = {"Accept": "application/vnd.github+json",
                "User-Agent": "AI-Council-pr-evidence-review"}
+    token = os.environ.get("GITHUB_TOKEN", "")
+    if token:
+        headers["Authorization"] = "Bearer " + token
     request = urllib.request.Request(url, headers=headers)
     try:
         with urllib.request.urlopen(request, timeout=30) as response:
