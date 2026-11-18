@@ -14,6 +14,12 @@ ALLOWED = {"arabist", "programmer"}
 FOLDERS = {"agent_inputs", "docs", "tools", "tests"}
 SUFFIXES = {".txt", ".md", ".json", ".py", ".kt", ".dart"}
 
+def model_for_role(role, primary_model, review_model=None):
+    """Use a separate reviewer model when explicitly configured."""
+    if role == "tester" and review_model:
+        return review_model
+    return primary_model
+
 def parse_task(body):
     try:
         task = json.loads(body or "")
@@ -141,6 +147,7 @@ def main():
     token = os.environ.get("GITHUB_TOKEN", "")
     key = os.environ.get("OPENAI_API_KEY", "")
     model = os.environ.get("OPENAI_MODEL", "") or "gpt-5-mini"
+    review_model = os.environ.get("OPENAI_REVIEW_MODEL", "").strip()
     enabled = os.environ.get("AI_AUTOMATION_ENABLED", "").lower() == "true"
     if enabled and (not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo) or not token):
         raise ValueError("Missing GitHub repository or token")
@@ -149,7 +156,8 @@ def main():
         return request_json(base + path, token, data, method)
     def ask(role, instructions, content):
         result = request_json("https://api.openai.com/v1/responses", key, {
-            "model": model, "instructions": instructions,
+            "model": model_for_role(role, model, review_model),
+            "instructions": instructions,
             "input": [{"role": "user", "content": [{"type": "input_text", "text": content}]}],
             "max_output_tokens": 1600, "store": False
         }, "POST")
