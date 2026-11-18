@@ -1,0 +1,45 @@
+name: AI-Council read-only PR evidence gate (pilot)
+
+on:
+  pull_request:
+    paths:
+      - 'tests/test_pr_evidence_gate.py'
+      - 'tools/pr_evidence_gate.py'
+      - '.github/workflows/pr-evidence-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ai-council-pr-evidence-pilot-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Inspect public draft PR #49 and exact CI evidence
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 tools/pr_evidence_gate.py \
+            --repository Xalidmuslim/Arabic-Academy-Flutter \
+            --pr 49 \
+            --expected-sha e91c8feb2a7f0cc630db1bc5d76d79053af13ea1 \
+            --output-prefix review_reports/pr-evidence
+      - name: Preserve human-readable evidence even if gate fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-pr-evidence
+          path: review_reports/
+          if-no-files-found: warn
+          retention-days: 7
