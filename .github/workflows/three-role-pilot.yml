@@ -120,6 +120,7 @@ jobs:
         working-directory: target
         run: flutter create --project-name arabic_academy --platforms android,ios .
       - name: Resolve existing project dependencies
+        id: dependencies
         working-directory: target
         run: flutter pub get
       - name: Flutter analyze (real)
@@ -128,7 +129,8 @@ jobs:
         run: |
           set -o pipefail
           flutter analyze 2>&1 | tee ../reports/flutter-analyze.log
-      - name: Flutter tests (real)
+      - name: Flutter tests (real, even if analysis found problems)
+        if: ${{ always() && steps.dependencies.outcome == 'success' }}
         working-directory: target
         shell: bash
         run: |
