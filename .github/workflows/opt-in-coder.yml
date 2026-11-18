@@ -1,0 +1,47 @@
+name: AI-Council opt-in coding agent (proposal only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_paid:
+        description: "Explicit consent: up to two billable model requests, no PR or source writes"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  issues: read
+
+concurrency:
+  group: ai-council-opt-in-coder
+  cancel-in-progress: false
+
+jobs:
+  propose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Propose one strictly scoped Flutter test change (disabled by default)
+        env:
+          AI_CODING_ENABLED: ${{ vars.AI_CODING_ENABLED }}
+          AI_CODING_COST_ACKNOWLEDGED: ${{ inputs.run_paid && vars.AI_CODING_COST_ACKNOWLEDGED == 'true' }}
+          AI_CODING_MODEL: ${{ vars.AI_CODING_MODEL }}
+          AI_CODING_REVIEW_MODEL: ${{ vars.AI_CODING_REVIEW_MODEL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 tools/opt_in_coder.py
+      - name: Upload bounded proposal and reviewer report (never a merged PR)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-council-code-proposal
+          path: agent_reports/coding-proposal.*
+          if-no-files-found: warn
+          retention-days: 7
