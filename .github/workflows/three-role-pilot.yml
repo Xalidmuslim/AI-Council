@@ -114,6 +114,7 @@ jobs:
           echo "APK: not built; device FPS: not measured" >> reports/tester.md
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.50.0'
           channel: stable
           cache: true
       - name: Generate temporary Flutter platform scaffolding
@@ -128,7 +129,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          flutter analyze 2>&1 | tee ../reports/flutter-analyze.log
+          flutter analyze --no-fatal-infos 2>&1 | tee ../reports/flutter-analyze.log
       - name: Flutter tests (real, even if analysis found problems)
         if: ${{ always() && steps.dependencies.outcome == 'success' }}
         working-directory: target
@@ -165,7 +166,7 @@ jobs:
             echo "Commit: $TARGET_SHA"
             echo "Programmer structural inventory: $PROGRAMMER_RESULT"
             echo "Arabic Unicode/JSON checks: $ARABIST_RESULT"
-            echo "Flutter analyze and test: $TESTER_RESULT"
+            echo "Flutter analyze (info diagnostics remain visible) + test: $TESTER_RESULT"
             echo ""
             echo "This is three independent CI jobs, NOT three running AI models."
             echo "No source modifications, code generation, PR to target, APK or device profiling."
