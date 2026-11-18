@@ -1,0 +1,7 @@
+{
+  "issue_number": 48,
+  "repository": "Xalidmuslim/Arabic-Academy-Flutter",
+  "source_sha": "d6728363bf7969bf76a95457e2c5c12b29fbe057",
+  "file_path": "test/widget_test.dart",
+  "objective": "Propose one minimal Flutter widget regression test for the existing demo role switch. Preserve existing tests and all app content. Do not modify production code, storage, Arabic text or build configuration."
+}
