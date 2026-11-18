@@ -113,13 +113,27 @@ def execute(*, enabled, api_key, get_issues, action, ask, root=ROOT, owner="", o
         return "IDLE"
     task = parse_task(issue.get("body", ""))
     source = load_source(task["source_path"], root)
-    report = run_roles(task, source, ask)
-    output.write_text(report, encoding="utf-8")
     number = issue["number"]
+    # Mark the work as in-progress before any billable calls. If the workflow
+    # crashes after a request, the queue will not silently retry that issue.
+    running_title = issue["title"].replace("[AGENT:pending]", "[AGENT:running]", 1)
+    action("PATCH", "issues/" + str(number), {"title": running_title})
+    try:
+        report = run_roles(task, source, ask)
+    except Exception:
+        output.write_text(
+            "NEEDS_CHECK: Issue #" + str(number)
+            + " interrupted after claim. API costs may already have occurred. "
+            + "Review the workflow logs and account usage before manually "
+            + "restoring [AGENT:pending]. No automatic retry.\n",
+            encoding="utf-8",
+        )
+        raise
+    output.write_text(report, encoding="utf-8")
     action("POST", "issues/" + str(number) + "/comments",
            {"body": "Два ИИ-этапа завершены. Черновик NEEDS_CHECK в GitHub Actions artifact cloud-agent-review. Никаких правок приложений."})
     action("PATCH", "issues/" + str(number),
-           {"title": issue["title"].replace("[AGENT:pending]", "[AGENT:review]", 1)})
+           {"title": running_title.replace("[AGENT:running]", "[AGENT:review]", 1)})
     return "NEEDS_CHECK"
 
 def main():
