@@ -1,0 +1,51 @@
+name: AI-Council public repository intake (read only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: "Explicitly allowlisted PUBLIC repository"
+        required: true
+        type: choice
+        options:
+          - Xalidmuslim/Arabic-Academy-Flutter
+      ref:
+        description: "Existing branch or tag; resolved to an immutable commit"
+        required: true
+        type: string
+        default: main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-repo-intake
+  cancel-in-progress: false
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Inspect public repo metadata only
+        env:
+          TARGET_REPOSITORY: ${{ inputs.repository }}
+          TARGET_REF: ${{ inputs.ref }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 tools/repository_intake.py \
+            --repository "$TARGET_REPOSITORY" \
+            --ref "$TARGET_REF" \
+            --output-prefix intake_reports/repository-intake
+      - name: Upload intake for human and agent handoff
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-repository-intake
+          path: intake_reports/
+          if-no-files-found: warn
+          retention-days: 7
