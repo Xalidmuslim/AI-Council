@@ -1,0 +1,178 @@
+name: AI-Council three-role Flutter pilot (pinned, read only)
+
+on:
+  pull_request:
+    paths:
+      - 'tools/pilot_checks.py'
+      - 'tests/test_pilot_checks.py'
+      - '.github/workflows/three-role-pilot.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ai-council-three-role-pilot-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  TARGET_REPOSITORY: Xalidmuslim/Arabic-Academy-Flutter
+  TARGET_SHA: d6728363bf7969bf76a95457e2c5c12b29fbe057
+
+jobs:
+  programmer:
+    name: Programmer — source inventory (no model)
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Checkout AI-Council tools
+        uses: actions/checkout@v4
+        with:
+          path: council
+          persist-credentials: false
+      - name: Checkout exact PUBLIC Flutter commit
+        uses: actions/checkout@v4
+        with:
+          repository: Xalidmuslim/Arabic-Academy-Flutter
+          ref: d6728363bf7969bf76a95457e2c5c12b29fbe057
+          path: target
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Record actual project shape and test inventory
+        shell: bash
+        run: |
+          python3 council/tools/pilot_checks.py \
+            --role programmer --root target \
+            --expected-sha "$TARGET_SHA" \
+            --output-prefix reports/programmer
+      - name: Save RECON evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-council-programmer-recon
+          path: reports/
+          if-no-files-found: warn
+          retention-days: 7
+
+  arabist:
+    name: Arabist — Unicode/JSON structural gate (no model)
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Checkout AI-Council tools
+        uses: actions/checkout@v4
+        with:
+          path: council
+          persist-credentials: false
+      - name: Checkout exact PUBLIC Flutter commit
+        uses: actions/checkout@v4
+        with:
+          repository: Xalidmuslim/Arabic-Academy-Flutter
+          ref: d6728363bf7969bf76a95457e2c5c12b29fbe057
+          path: target
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate Arabic draft Unicode, identifiers and quiz index
+        shell: bash
+        run: |
+          python3 council/tools/pilot_checks.py \
+            --role arabist --root target \
+            --expected-sha "$TARGET_SHA" \
+            --output-prefix reports/arabist
+      - name: Save structural evidence (not translation approval)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-council-arabist-structure
+          path: reports/
+          if-no-files-found: warn
+          retention-days: 7
+
+  tester:
+    name: Tester — real Flutter analyze and test (no model)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact PUBLIC Flutter commit
+        uses: actions/checkout@v4
+        with:
+          repository: Xalidmuslim/Arabic-Academy-Flutter
+          ref: d6728363bf7969bf76a95457e2c5c12b29fbe057
+          path: target
+          persist-credentials: false
+      - name: Verify requested pinned source commit
+        shell: bash
+        run: |
+          test "$(git -C target rev-parse HEAD)" = "$TARGET_SHA"
+          mkdir -p reports
+          echo "Target: $TARGET_REPOSITORY" > reports/tester.md
+          echo "Commit: $TARGET_SHA" >> reports/tester.md
+          echo "APK: not built; device FPS: not measured" >> reports/tester.md
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.50.0'
+          channel: stable
+          cache: true
+      - name: Generate temporary Flutter platform scaffolding
+        working-directory: target
+        run: flutter create --project-name arabic_academy --platforms android,ios .
+      - name: Resolve existing project dependencies
+        id: dependencies
+        working-directory: target
+        run: flutter pub get
+      - name: Flutter analyze (real)
+        working-directory: target
+        shell: bash
+        run: |
+          set -o pipefail
+          flutter analyze --no-fatal-infos 2>&1 | tee ../reports/flutter-analyze.log
+      - name: Flutter tests (real, even if analysis found problems)
+        if: ${{ always() && steps.dependencies.outcome == 'success' }}
+        working-directory: target
+        shell: bash
+        run: |
+          set -o pipefail
+          flutter test 2>&1 | tee ../reports/flutter-test.log
+      - name: Save logs including on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-council-tester-flutter-logs
+          path: reports/
+          if-no-files-found: warn
+          retention-days: 7
+
+  quality_gate:
+    name: Quality gate — human review remains required
+    if: always()
+    needs: [programmer, arabist, tester]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Report role outcomes without inventing AI participation
+        shell: bash
+        env:
+          PROGRAMMER_RESULT: ${{ needs.programmer.result }}
+          ARABIST_RESULT: ${{ needs.arabist.result }}
+          TESTER_RESULT: ${{ needs.tester.result }}
+        run: |
+          {
+            echo "## AI-Council pilot — pinned public Flutter commit"
+            echo ""
+            echo "Commit: $TARGET_SHA"
+            echo "Programmer structural inventory: $PROGRAMMER_RESULT"
+            echo "Arabic Unicode/JSON checks: $ARABIST_RESULT"
+            echo "Flutter analyze (info diagnostics remain visible) + test: $TESTER_RESULT"
+            echo ""
+            echo "This is three independent CI jobs, NOT three running AI models."
+            echo "No source modifications, code generation, PR to target, APK or device profiling."
+            echo "Arabic semantic verification: NOT CHECKED."
+            echo "Status: NEEDS_CHECK until human review of artifacts and logs."
+          } >> "$GITHUB_STEP_SUMMARY"
+          test "$PROGRAMMER_RESULT" = success
+          test "$ARABIST_RESULT" = success
+          test "$TESTER_RESULT" = success
