@@ -1,0 +1,35 @@
+name: AI-Council Codex no-API handoff (manual)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codex-no-api-handoff
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate fixed public issue scope and prepare independent prompts
+        run: |
+          python3 tools/codex_handoff.py \
+            --task agent_inputs/codex_cloud_pilot_48.json \
+            --out handoff_reports/codex
+      - name: Upload instructions for two separately started Codex tasks
+        uses: actions/upload-artifact@v4
+        with:
+          name: codex-no-api-handoff
+          path: handoff_reports/codex/
+          if-no-files-found: error
+          retention-days: 7
