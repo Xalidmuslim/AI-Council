@@ -94,6 +94,12 @@ class OptInCoderTests(unittest.TestCase):
             with self.subTest(key=key), self.assertRaises(ValueError):
                 inspect_source(TASK, bad)
 
+    def test_source_base64_must_reject_ignored_garbage(self):
+        corrupted = self.fake_data()
+        corrupted["file"]["content"] += "$"
+        with self.assertRaises(ValueError):
+            inspect_source(TASK, corrupted)
+
     def test_full_source_patch_is_not_required_and_diff_is_pinned(self):
         result = validate_proposal(TASK, SRC, PROPOSAL)
         self.assertIn("-  testWidgets('demo', (_) {});", result["diff"])
