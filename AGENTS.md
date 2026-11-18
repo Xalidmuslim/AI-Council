@@ -22,3 +22,16 @@ instructions, not proof of a separately running agent. Prefer explicit input
 (repository/ref/commit, scope, evidence) and safe draft PR handoffs.
 Read target-repository AGENTS.md first; never assume these instructions are loaded
 automatically by ChatGPT Work or unrelated repositories.
+
+
+## Codex Cloud without a separate OpenAI API key
+
+When the task asks for AI-Council using Codex Cloud and GitHub Actions,
+read [docs/CODEX_NO_API_WORKFLOW.md](docs/CODEX_NO_API_WORKFLOW.md).
+Prepare the explicit fixed-scope pilot handoff with
+`python3 tools/codex_handoff.py`. This creates prompts and metadata only;
+it never starts models, creates cloud environments or transfers repository
+permissions. Programmer and reviewer must be separate real Codex tasks
+launched by the user in the authorized target repository. Do not call a
+successful handoff CI run "agents executed". Do not turn on legacy
+`AI_AUTOMATION_ENABLED` or `AI_CODING_ENABLED` for this no-API route.
